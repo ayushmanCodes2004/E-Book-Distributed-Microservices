@@ -9,6 +9,7 @@ import com.ebook.Auth_Service.Repository.UserCredentialRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -20,6 +21,8 @@ public class OtpService {
     private final UserCredentialRepository userCredentialRepository;
 
     private final RedisTemplate<String, String> redisTemplate;
+
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${otp.expiry.minutes}")
     private long expiryTime;
@@ -39,20 +42,21 @@ public class OtpService {
         String otp = generateOtp();
 
         String key = "OTP:" + phoneNumber;
-        redisTemplate.opsForValue().set(key, otp);
+        String hashedOtp = passwordEncoder.encode(otp);
+        redisTemplate.opsForValue().set(key, hashedOtp);
         redisTemplate.expire(key, java.time.Duration.ofMinutes(expiryTime));
         return otp;
     }
 
     public boolean validateOtp(Integer phoneNumber, String otp) {
         String key = "OTP:" + phoneNumber;
-        String storedOtp = redisTemplate.opsForValue().get(key);
+        String storedHashedOtp = redisTemplate.opsForValue().get(key);
 
-        if (storedOtp == null) {
+        if (storedHashedOtp == null) {
             throw new OtpExpiredException("OTP has expired or does not exist for phone number: " + phoneNumber);
         }
 
-        if (!storedOtp.equals(otp)) {
+        if (!passwordEncoder.matches(otp, storedHashedOtp)) {
             throw new InvalidOtpException("Invalid OTP provided for phone number: " + phoneNumber);
         }
 
