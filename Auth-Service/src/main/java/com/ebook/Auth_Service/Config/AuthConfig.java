@@ -39,7 +39,7 @@ public class AuthConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(request->{
-                    request.requestMatchers("/auth/register", "/auth/login","/auth/validateCustomerId/**").permitAll();
+                    request.requestMatchers("/auth/register", "/auth/login","/auth/validateCustomerId/**","/auth/password/request-otp","/auth/password/reset").permitAll();
 //                    request.requestMatchers(HttpMethod.GET,"/**").permitAll();
 
                     request.anyRequest().authenticated();

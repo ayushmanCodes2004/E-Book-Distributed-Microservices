@@ -25,6 +25,8 @@ public class AuthService {
 
     private final EmailPublisher emailPublisher;
 
+    private final OtpService otpService;
+
     public String registerUser(UserDTO user){
 
         Random random = new Random();
@@ -36,12 +38,13 @@ public class AuthService {
         userCredential.setUserName(user.getUserName());
         userCredential.setEmail(user.getEmail());
         userCredential.setCustomerId(customerId);
+        userCredential.setPhoneNumber((user.getPhoneNumber()));
 
         userCredentialRepository.save(userCredential);
 
         String subject = "Welcome to E-Book Platform!";
         String body = "Dear " + userCredential.getUserName() + ",\n\n"
-                + "Welcome to the E-Book Store! 🎉\n\n"
+                + "Welcome to the E-Book Store! \n\n"
                 + "We are thrilled to have you join our community of passionate readers.\n\n"
                 + "Your Customer ID is: " + customerId + "\n\n"
                 + "With your new account, you can now explore thousands of e-books across various genres, "
@@ -54,7 +57,7 @@ public class AuthService {
                 + "Your journey into the world of endless stories, knowledge, and imagination begins here. "
                 + "We’re committed to making your reading experience delightful and enriching.\n\n"
                 + "If you have any questions or need assistance, our support team is always ready to help you.\n\n"
-                + "Happy Reading! 📚\n"
+                + "Happy Reading! \n"
                 + "Warm Regards,\n"
                 + "The E-Book Team";
 
@@ -89,5 +92,53 @@ public class AuthService {
 
 
     }
+
+
+    public String requestPasswordResetOtp(Integer phoneNumber) {
+        Optional<UserCredential> user = userCredentialRepository.findByPhoneNumber(phoneNumber);
+        if (user.isEmpty()) {
+            throw new com.ebook.Auth_Service.Exception.UserNotFoundException("User not found with phone number: " + phoneNumber);
+        }
+
+        String otp = otpService.createAndStoreOtp(phoneNumber);
+
+        String subject = "Password Reset OTP";
+        String body = "Dear " + user.get().getUserName() + ",\n\n"
+                + "You have requested to reset your password.\n\n"
+                + "Your OTP for password reset is: " + otp + "\n\n"
+                + "This OTP is valid for a limited time. Please do not share this OTP with anyone.\n\n"
+                + "If you did not request this password reset, please ignore this email and ensure your account is secure.\n\n"
+                + "Regards,\n"
+                + "The E-Book Team";
+
+        emailPublisher.publishEmailMessage(user.get().getEmail(), subject, body);
+
+        return "OTP sent successfully to your registered email";
+    }
+
+    public String resetPassword(Integer phoneNumber, String otp, String newPassword) {
+        otpService.validateOtp(phoneNumber, otp);
+
+        Optional<UserCredential> userOptional = userCredentialRepository.findByPhoneNumber(phoneNumber);
+        if (userOptional.isEmpty()) {
+            throw new com.ebook.Auth_Service.Exception.UserNotFoundException("User not found with phone number: " + phoneNumber);
+        }
+
+        UserCredential user = userOptional.get();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userCredentialRepository.save(user);
+
+        String subject = "Password Changed Successfully";
+        String body = "Dear " + user.getUserName() + ",\n\n"
+                + "Your password has been successfully changed.\n\n"
+                + "If you did not make this change, please contact our support team immediately.\n\n"
+                + "Regards,\n"
+                + "The E-Book Team";
+
+        emailPublisher.publishEmailMessage(user.getEmail(), subject, body);
+
+        return "Password updated successfully";
+    }
+
 
 }

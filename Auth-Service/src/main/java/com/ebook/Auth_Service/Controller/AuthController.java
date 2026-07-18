@@ -1,5 +1,7 @@
 package com.ebook.Auth_Service.Controller;
 
+import com.ebook.Auth_Service.DTO.OtpRequestDTO;
+import com.ebook.Auth_Service.DTO.PasswordResetDTO;
 import com.ebook.Auth_Service.DTO.UserDTO;
 import com.ebook.Auth_Service.DTO.UserResponseDTO;
 import com.ebook.Auth_Service.Entity.UserCredential;
@@ -40,6 +42,25 @@ public class AuthController {
         return authService.validCustomerId(customerId);
     }
 
+
+    @PostMapping("/password/request-otp")
+    public ResponseEntity<String> requestPasswordResetOtp(@RequestBody OtpRequestDTO request) {
+        String response = authService.requestPasswordResetOtp(request.getPhoneNumber());
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @PostMapping("/password/reset")
+    public ResponseEntity<String> resetPassword(@RequestBody PasswordResetDTO request) {
+        String response = authService.resetPassword(
+            request.getPhoneNumber(),
+            request.getOtp(),
+            request.getNewPassword()
+        );
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+
+   
 
 
 
