@@ -19,12 +19,24 @@ public class EmailListener {
     public void handleEmailMessage(EmailMessage emailMessage) {
         log.info("Received email message from RabbitMQ for: {}", emailMessage.getTo());
         try {
-            emailService.sendEmail(
-                    emailMessage.getTo(),
-                    emailMessage.getSubject(),
-                    emailMessage.getBody()
-            );
-            log.info("Email sent successfully to: {}", emailMessage.getTo());
+            if (emailMessage.isHtml() && emailMessage.getTemplateName() != null) {
+                // Send HTML email with template
+                emailService.sendHtmlEmail(
+                        emailMessage.getTo(),
+                        emailMessage.getSubject(),
+                        emailMessage.getTemplateName(),
+                        emailMessage.getVariables()
+                );
+                log.info("HTML email sent successfully to: {}", emailMessage.getTo());
+            } else {
+                // Send plain text email
+                emailService.sendEmail(
+                        emailMessage.getTo(),
+                        emailMessage.getSubject(),
+                        emailMessage.getBody()
+                );
+                log.info("Plain text email sent successfully to: {}", emailMessage.getTo());
+            }
         } catch (Exception e) {
             log.error("Failed to send email to: {}", emailMessage.getTo(), e);
         }

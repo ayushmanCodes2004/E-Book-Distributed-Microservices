@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 
 @Component
-@Order(-1)
+@Order(1)  // Changed from -1 to 1 to let circuit breaker handle exceptions first
 public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
 
     private final ObjectMapper objectMapper = new ObjectMapper();

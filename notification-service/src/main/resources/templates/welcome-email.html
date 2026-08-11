@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to eBook Store</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 30px;
+            border-bottom: 3px solid #4CAF50;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+        h1 {
+            color: #4CAF50;
+            font-size: 28px;
+            margin-top: 30px;
+        }
+        .customer-id {
+            background-color: #f0f8f0;
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .customer-id strong {
+            color: #4CAF50;
+            font-size: 18px;
+        }
+        .info-box {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            color: #777;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">eBook Store</div>
+            <p style="color: #666;">Your Digital Reading Paradise</p>
+        </div>
+
+        <h1>Welcome, <span th:text="${userName}">User</span>!</h1>
+        
+        <p>Thank you for joining our eBook community! We're thrilled to have you on board.</p>
+
+        <div class="customer-id">
+            <p style="margin: 0;">Your Customer ID:</p>
+            <strong th:text="${customerId}">CUST-XXXX</strong>
+        </div>
+
+        <div class="info-box">
+            <h3 style="margin-top: 0; color: #4CAF50;">What's Next?</h3>
+            <ul style="padding-left: 20px;">
+                <li>Browse thousands of eBooks across all genres</li>
+                <li>Add your favorite books to your cart</li>
+                <li>Enjoy secure and fast checkout</li>
+                <li>Access your orders anytime</li>
+            </ul>
+        </div>
+
+        <p style="margin-top: 30px;">Your account has been successfully created with the following details:</p>
+        <ul style="list-style: none; padding: 0;">
+            <li><strong>Email:</strong> <span th:text="${email}">email@example.com</span></li>
+            <li><strong>Phone:</strong> <span th:text="${phoneNumber}">1234567890</span></li>
+        </ul>
+
+        <center>
+            <a href="#" class="button">Start Shopping Now</a>
+        </center>
+
+        <div class="footer">
+            <p>Need help? Contact us at support@ebookstore.com</p>
+            <p>&copy; 2026 eBook Store. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

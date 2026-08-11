@@ -9,9 +9,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +31,27 @@ public class AuthService {
 
     public String registerUser(UserDTO user){
 
+        // Check if username already exists
+        if (userCredentialRepository.existsByUserName(user.getUserName())) {
+            throw new com.ebook.Auth_Service.Exception.UserAlreadyExistsException(
+                    "Username '" + user.getUserName() + "' is already taken. Please choose a different username."
+            );
+        }
+
+        // Check if email already exists
+        if (userCredentialRepository.existsByEmail(user.getEmail())) {
+            throw new com.ebook.Auth_Service.Exception.UserAlreadyExistsException(
+                    "Email '" + user.getEmail() + "' is already registered. Please use a different email or try logging in."
+            );
+        }
+
+        // Check if phone number already exists
+        if (userCredentialRepository.existsByPhoneNumber(user.getPhoneNumber())) {
+            throw new com.ebook.Auth_Service.Exception.UserAlreadyExistsException(
+                    "Phone number '" + user.getPhoneNumber() + "' is already registered. Please use a different phone number."
+            );
+        }
+
         Random random = new Random();
         int number = 1000 + random.nextInt(9000);
         String customerId = "CUST-" + number;
@@ -42,27 +65,23 @@ public class AuthService {
 
         userCredentialRepository.save(userCredential);
 
-        String subject = "Welcome to E-Book Platform!";
-        String body = "Dear " + userCredential.getUserName() + ",\n\n"
-                + "Welcome to the E-Book Store! \n\n"
-                + "We are thrilled to have you join our community of passionate readers.\n\n"
-                + "Your Customer ID is: " + customerId + "\n\n"
-                + "With your new account, you can now explore thousands of e-books across various genres, "
-                + "manage your personal library, and enjoy seamless reading anytime, anywhere.\n\n"
-                + "Here are a few things you can do right away:\n"
-                + "• Browse our wide collection of e-books.\n"
-                + "• Add your favorite titles to your wishlist or library.\n"
-                + "• Track your orders and manage your purchases with ease.\n"
-                + "• Stay updated with our latest releases and special offers.\n\n"
-                + "Your journey into the world of endless stories, knowledge, and imagination begins here. "
-                + "We’re committed to making your reading experience delightful and enriching.\n\n"
-                + "If you have any questions or need assistance, our support team is always ready to help you.\n\n"
-                + "Happy Reading! \n"
-                + "Warm Regards,\n"
-                + "The E-Book Team";
-
-
-        emailPublisher.publishEmailMessage(userCredential.getEmail(), subject, body);
+        // Send HTML welcome email (non-blocking, failure won't affect registration)
+        try {
+            emailPublisher.publishHtmlEmailMessage(
+                    userCredential.getEmail(),
+                    "Welcome to eBook Store",
+                    "welcome-email",
+                    Map.of(
+                            "userName", userCredential.getUserName(),
+                            "customerId", customerId,
+                            "email", userCredential.getEmail(),
+                            "phoneNumber", userCredential.getPhoneNumber().toString()
+                    )
+            );
+        } catch (Exception e) {
+            // Log the error but don't fail the registration
+            System.err.println("Failed to send welcome email: " + e.getMessage());
+        }
 
         return "User registered successfully with customerId: " + customerId;
 
@@ -89,12 +108,9 @@ public class AuthService {
         userResponseDTO.setEmail(userCredential.get().getEmail());
 
         return userResponseDTO;
-
-
     }
 
-
-    public String requestPasswordResetOtp(Integer phoneNumber) {
+    public String requestPasswordResetOtp(Long phoneNumber) {
         Optional<UserCredential> user = userCredentialRepository.findByPhoneNumber(phoneNumber);
         if (user.isEmpty()) {
             throw new com.ebook.Auth_Service.Exception.UserNotFoundException("User not found with phone number: " + phoneNumber);
@@ -102,21 +118,25 @@ public class AuthService {
 
         String otp = otpService.createAndStoreOtp(phoneNumber);
 
-        String subject = "Password Reset OTP";
-        String body = "Dear " + user.get().getUserName() + ",\n\n"
-                + "You have requested to reset your password.\n\n"
-                + "Your OTP for password reset is: " + otp + "\n\n"
-                + "This OTP is valid for a limited time. Please do not share this OTP with anyone.\n\n"
-                + "If you did not request this password reset, please ignore this email and ensure your account is secure.\n\n"
-                + "Regards,\n"
-                + "The E-Book Team";
-
-        emailPublisher.publishEmailMessage(user.get().getEmail(), subject, body);
+        // Send HTML OTP email (non-blocking)
+        try {
+            emailPublisher.publishHtmlEmailMessage(
+                    user.get().getEmail(),
+                    "Password Reset OTP - eBook Store",
+                    "otp-email",
+                    Map.of(
+                            "otp", otp,
+                            "expiryMinutes", "5"
+                    )
+            );
+        } catch (Exception e) {
+            System.err.println("Failed to send OTP email: " + e.getMessage());
+        }
 
         return "OTP sent successfully to your registered email";
     }
 
-    public String resetPassword(Integer phoneNumber, String otp, String newPassword) {
+    public String resetPassword(Long phoneNumber, String otp, String newPassword) {
         otpService.validateOtp(phoneNumber, otp);
 
         Optional<UserCredential> userOptional = userCredentialRepository.findByPhoneNumber(phoneNumber);
@@ -128,17 +148,22 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userCredentialRepository.save(user);
 
-        String subject = "Password Changed Successfully";
-        String body = "Dear " + user.getUserName() + ",\n\n"
-                + "Your password has been successfully changed.\n\n"
-                + "If you did not make this change, please contact our support team immediately.\n\n"
-                + "Regards,\n"
-                + "The E-Book Team";
-
-        emailPublisher.publishEmailMessage(user.getEmail(), subject, body);
+        // Send HTML password changed email (non-blocking)
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            emailPublisher.publishHtmlEmailMessage(
+                    user.getEmail(),
+                    "Password Changed Successfully - eBook Store",
+                    "password-changed-email",
+                    Map.of(
+                            "phoneNumber", phoneNumber.toString(),
+                            "timestamp", LocalDateTime.now().format(formatter)
+                    )
+            );
+        } catch (Exception e) {
+            System.err.println("Failed to send password changed email: " + e.getMessage());
+        }
 
         return "Password updated successfully";
     }
-
-
 }

@@ -9,65 +9,160 @@ spring:
               enabled: true
           routes:
             - id: book-service-route
-#              uri: lb://book-service
-#              uri: http://localhost:6000
               uri: lb://book-service
               predicates:
                 - Path=/api/v1/books/**, /api/v1/genres/**
               filters:
-                - RewritePath=/api/v1/(?<segment>.*), /${segment}
                 - CustomAuthFilter
-#                - name: RequestRateLimiter
-#                  args:
-#                    key-Resolver: "#{@ipKeyResolver}"
-#                    redis-rate-limiter.replenishRate: 2
-#                    redis-rate-limiter.burstCapacity: 2
-
-
-
+                - RewritePath=/api/v1/(?<segment>.*), /${segment}
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userKeyResolver}"
+                    redis-rate-limiter.replenishRate: 50
+                    redis-rate-limiter.burstCapacity: 100
+                    redis-rate-limiter.requestedTokens: 1
+                - name: CircuitBreaker
+                  args:
+                    name: bookServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/book
 
             - id: order-service-route
-#              uri: http://localhost:6001
               uri: lb://orders-service
               predicates:
                 - Path=/api/v1/orders/**
               filters:
-                - RewritePath=/api/v1/(?<segment>.*), /${segment}
                 - CustomAuthFilter
-
-
-
+                - RewritePath=/api/v1/(?<segment>.*), /${segment}
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userKeyResolver}"
+                    redis-rate-limiter.replenishRate: 30
+                    redis-rate-limiter.burstCapacity: 60
+                    redis-rate-limiter.requestedTokens: 1
+                - name: CircuitBreaker
+                  args:
+                    name: orderServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/order
 
             - id: payment-service-route
-#              uri: http://localhost:6002
               uri: lb://payment-service
               predicates:
                 - Path=/api/v1/payments/**
               filters:
-                - RewritePath=/api/v1/(?<segment>.*), /${segment}
                 - CustomAuthFilter
-
-
-
-
+                - RewritePath=/api/v1/(?<segment>.*), /${segment}
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userKeyResolver}"
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 40
+                    redis-rate-limiter.requestedTokens: 1
+                - name: CircuitBreaker
+                  args:
+                    name: paymentServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/payment
 
             - id: auth-service-route
-#              uri: http://localhost:6003
               uri: lb://auth-service
               predicates:
                   - Path=/api/v1/auth/**
               filters:
+                  - CustomAuthFilter
                   - RewritePath=/api/v1/(?<segment>.*), /${segment}
+                  - name: RequestRateLimiter
+                    args:
+                      key-resolver: "#{@userKeyResolver}"
+                      redis-rate-limiter.replenishRate: 10
+                      redis-rate-limiter.burstCapacity: 20
+                      redis-rate-limiter.requestedTokens: 1
+                  - name: CircuitBreaker
+                    args:
+                      name: authServiceCircuitBreaker
+                      fallbackUri: forward:/fallback/auth
 
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
-
-
-
   instance:
-    prefer-ip-address: true   # IP use karega instead of hostname
-    ip-address: 127.0.0.1      # force localhost
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437}
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.ebooks.apigateway: INFO
+    org.springframework.cloud.gateway: INFO
+    org.springframework.web: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+
+# Resilience4j Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      bookServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        
+      orderServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        
+      paymentServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        
+      authServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 2s
+  
+  timelimiter:
+    instances:
+      bookServiceCircuitBreaker:
+        timeoutDuration: 3s
+      orderServiceCircuitBreaker:
+        timeoutDuration: 3s
+      paymentServiceCircuitBreaker:
+        timeoutDuration: 3s
+      authServiceCircuitBreaker:
+        timeoutDuration: 3s
 

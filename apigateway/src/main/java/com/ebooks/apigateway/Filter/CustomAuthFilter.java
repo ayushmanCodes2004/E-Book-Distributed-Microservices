@@ -3,6 +3,8 @@ package com.ebooks.apigateway.Filter;
 import com.ebooks.apigateway.Exception.InvalidTokenException;
 import com.ebooks.apigateway.Exception.MissingAuthorizationHeaderException;
 import com.ebooks.apigateway.Util.JwtUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -12,6 +14,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class CustomAuthFilter extends AbstractGatewayFilterFactory<CustomAuthFilter.Config> {
+
+    private static final Logger log = LoggerFactory.getLogger(CustomAuthFilter.class);
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -27,9 +31,13 @@ public class CustomAuthFilter extends AbstractGatewayFilterFactory<CustomAuthFil
     public GatewayFilter apply(Config config) {
 
         return (exchange, chain) -> {
-            if (validator.isSecured.test(exchange.getRequest())) {
+            String path = exchange.getRequest().getURI().getPath();
+            boolean isSecured = validator.isSecured.test(exchange.getRequest());
+            
+            if (isSecured) {
                 //header contains token or not
                 if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
+                    log.warn("Missing Authorization Header for: {}", path);
                     throw new MissingAuthorizationHeaderException("Missing authorization header");
                 }
 
@@ -43,9 +51,11 @@ public class CustomAuthFilter extends AbstractGatewayFilterFactory<CustomAuthFil
                     jwtUtil.validateToken(authHeader);
 
                 } catch (Exception e) {
-                    System.out.println("invalid access...!");
+                    log.error("Invalid token for: {}", path);
                     throw new InvalidTokenException("Unauthorized access to application: Invalid or expired token", e);
                 }
+            } else {
+                log.debug("Open endpoint - skipping auth for: {}", path);
             }
 
             return chain.filter(exchange);

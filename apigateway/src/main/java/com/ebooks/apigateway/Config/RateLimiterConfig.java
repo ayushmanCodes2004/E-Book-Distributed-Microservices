@@ -6,13 +6,17 @@ import org.springframework.context.annotation.Configuration;
 import reactor.core.publisher.Mono;
 
 @Configuration
-public class RedisConfig {
+public class RateLimiterConfig {
 
     @Bean
-    public KeyResolver ipKeyResolver(){
+    public KeyResolver userKeyResolver() {
         return exchange -> {
-            String ip = exchange.getRequest().getRemoteAddress().getAddress().getHostAddress();
-            return Mono.just(ip);
+
+            String ipAddress = exchange.getRequest().getRemoteAddress() != null 
+                ? exchange.getRequest().getRemoteAddress().getAddress().getHostAddress() 
+                : "unknown";
+            
+            return Mono.just(ipAddress);
         };
     }
 }
