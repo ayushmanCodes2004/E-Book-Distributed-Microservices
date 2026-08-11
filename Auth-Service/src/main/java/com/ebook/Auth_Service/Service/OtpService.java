@@ -34,7 +34,7 @@ public class OtpService {
 
     }
 
-    public String createAndStoreOtp(Integer phoneNumber) {
+    public String createAndStoreOtp(Long phoneNumber) {
         Optional<UserCredential> user = userCredentialRepository.findByPhoneNumber(phoneNumber);
         if (user.isEmpty()) {
             throw new UserNotFoundException("User not found with phone number: " + phoneNumber);
@@ -48,7 +48,7 @@ public class OtpService {
         return otp;
     }
 
-    public boolean validateOtp(Integer phoneNumber, String otp) {
+    public boolean validateOtp(Long phoneNumber, String otp) {
         String key = "OTP:" + phoneNumber;
         String storedHashedOtp = redisTemplate.opsForValue().get(key);
 

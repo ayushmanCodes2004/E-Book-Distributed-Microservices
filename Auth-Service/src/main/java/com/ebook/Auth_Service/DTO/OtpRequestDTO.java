@@ -5,6 +5,6 @@ import lombok.Data;
 @Data
 public class OtpRequestDTO {
 
-    private Integer phoneNumber;
+    private Long phoneNumber;
 
 }

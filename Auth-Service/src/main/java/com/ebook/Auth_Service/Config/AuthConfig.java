@@ -43,10 +43,9 @@ public class AuthConfig {
 //                    request.requestMatchers(HttpMethod.GET,"/**").permitAll();
 
                     request.anyRequest().authenticated();
-                }).authenticationProvider(customAuthenticationProvider());
-
-//                sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
+                })
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(customAuthenticationProvider());
 
 //                .httpBasic(Customizer.withDefaults());
         return http.build();

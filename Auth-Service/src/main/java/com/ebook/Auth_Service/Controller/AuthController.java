@@ -6,6 +6,7 @@ import com.ebook.Auth_Service.DTO.UserDTO;
 import com.ebook.Auth_Service.DTO.UserResponseDTO;
 import com.ebook.Auth_Service.Entity.UserCredential;
 import com.ebook.Auth_Service.Service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,12 +25,12 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody UserDTO user){
+    public ResponseEntity<String> registerUser(@Valid @RequestBody UserDTO user){
         return new ResponseEntity<>(authService.registerUser(user), HttpStatus.OK);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> loginUser(@RequestBody UserDTO user){
+    public ResponseEntity<String> loginUser(@Valid @RequestBody UserDTO user){
         Authentication authenticatedUser = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(user.getUserName(), user.getPassword())
         );
